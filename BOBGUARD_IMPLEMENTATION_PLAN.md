@@ -48,65 +48,72 @@ Define the authoritative governance ruleset as a structured JSON file. This is t
 
 ## Sub-Task 2 — Pre-Commit Hook (Git Interceptor)
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 ### Intent
-Install a Git pre-commit hook inside `mock-enterprise-target` that fires on every `git commit`. It captures the staged diff, enriches it with Git metadata, and POSTs the payload to the Express backend. If the backend blocks the commit (returns a non-200 status or a `blocked: true` flag), the hook exits with code `1` — preventing the commit. If the backend is unreachable after a 15-second timeout, the hook fails open (exits `0`) and prints a warning.
+Install a Git pre-commit hook at the **monorepo root** `.git/hooks/pre-commit` that fires on every `git commit`. It captures the staged diff, reads the latest Bob Task ID, and POSTs the payload to the Express backend. If the backend responds `{ allowCommit: false }`, the hook exits with code `1` — blocking the commit. If the backend is unreachable after 15 seconds, the hook fails open (exits `0`) and prints a warning.
 
 ### Expected Outcomes
-- `mock-enterprise-target/.git/hooks/pre-commit` is a Node.js script (shebang `#!/usr/bin/env node`).
-- Running `git commit` in `mock-enterprise-target` triggers the hook.
-- The hook POSTs a JSON payload to `http://localhost:3001/api/audit/analyze`.
-- A blocked response causes the hook to print a coloured terminal output with the violation summary and exit `1`.
-- A passing response prints a green confirmation with the generated audit record ID.
-- Hook includes a 15-second circuit-breaker timeout — if the backend is down, the hook exits `0` with a yellow warning.
+- `.git/hooks/pre-commit` (monorepo root) is a Node.js script (shebang `#!/usr/bin/env node`). ✔
+- Running `git commit` in the monorepo triggers the hook. ✔
+- The hook POSTs `{ repoName, diff, taskId }` to `http://localhost:5000/api/audit/verify`. ✔
+- A `{ allowCommit: false }` response causes the hook to print coloured terminal output with violations and exit `1`. ✔
+- A `{ allowCommit: true }` response prints a green confirmation with the audit record ID and exits `0`. ✔
+- Bob Task ID is read from `.bob/latest_task_id`; defaults to `'manual-commit'` if file is absent. ✔
+- Hook includes a 15-second circuit-breaker timeout — if the backend is down, exits `0` with a yellow warning. ✔
 
 ### Todo List
-1. Create `mock-enterprise-target/.git/hooks/pre-commit` as a Node.js script.
-2. Implement `getGitStagedDiff()` — runs `git diff --cached` and captures stdout.
-3. Implement `getCommitMeta()` — captures `git rev-parse --short HEAD`, author name, and branch name.
-4. Implement `postToGateway(payload)` — uses Node's built-in `http` module (no external deps) to POST to the backend, respecting the 15-second timeout.
-5. Implement the `main()` flow: diff → meta → POST → parse response → exit code.
-6. Make the script executable (`chmod +x` instruction in README).
+1. Create `.git/hooks/pre-commit` as a Node.js script. ✔
+2. Implement `getGitStagedDiff()` — runs `git diff --cached` and captures stdout. ✔
+3. Implement `getBobTaskId()` — reads `.bob/latest_task_id`, defaults to `'manual-commit'`. ✔
+4. Implement `postToGateway(payload)` — uses Node's built-in `http` module (no external deps), respecting the 15-second timeout. ✔
+5. Implement the `main()` flow: diff → taskId → POST → parse response → exit code. ✔
+6. Syntax-validated with `node --check`. ✔
 
 ### Relevant Context
-- The target application already has a `precommit` npm script (`Gruntfile.js`) — the hook must not conflict with it. The hook fires _before_ Grunt's precommit task.
-- Node.js is available in the environment (NodeGoat already uses it).
-- No external npm packages may be used in the hook to avoid bootstrap dependency issues.
+- Hook location is the **monorepo root** `.git/hooks/`, not `mock-enterprise-target/.git/hooks/`.
+- Gateway endpoint: `http://localhost:5000/api/audit/verify` (port 5000, path `/api/audit/verify`).
+- Response contract: `{ allowCommit: boolean, auditId?: string, violations?: Array, reason?: string, remediationAvailable?: boolean }`.
+- On Windows, Git for Windows executes hooks via Git Bash — the `#!/usr/bin/env node` shebang is sufficient; `chmod +x` is not required on the filesystem but `git update-index --chmod=+x` was applied.
+- No external npm packages are used in the hook.
 
 ---
 
 ## Sub-Task 3 — Express Backend: Server & Middleware Bootstrap
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 ### Intent
 Scaffold the `mern-auditor-platform/backend` Express server with all required middleware, MongoDB connection, policy loader, and route mounting. This is the foundation all subsequent sub-tasks build on.
 
 ### Expected Outcomes
-- `mern-auditor-platform/backend/server.js` starts without errors when `npm start` is run.
-- MongoDB connection is established and the connection object is passed to all routes/controllers.
-- `.ai-policy.json` is loaded from disk, validated against the JSON Schema, and cached in-memory at startup.
-- CORS is configured to allow requests from `http://localhost:5173` (the Vite React dev server).
-- The server listens on port `3001`.
-- A `GET /health` endpoint returns `{ status: "ok", policyVersion }`.
+- `mern-auditor-platform/backend/server.js` starts without errors when `npm start` is run. ✔
+- MongoDB connection established via `mongoose.connect()` (Mongoose 8). ✔
+- `.ai-policy.json` loaded, AJV-validated, and cached in-memory at startup. ✔
+- CORS configured to allow `http://localhost:5173` (Vite dev server). ✔
+- Server listens on port `5000` (matches pre-commit hook; env-configurable via `PORT`). ✔
+- `GET /health` returns `{ status, policyVersion, mongoState }`. ✔
+- Stub `auditRoutes.js` wired so server starts cleanly before Sub-Tasks 4 & 6. ✔
 
 ### Todo List
-1. Initialize `mern-auditor-platform/backend/` with `npm init` defaults — update `package.json` with dependencies: `express`, `mongoose`, `cors`, `dotenv`, `ajv` (JSON Schema validator).
-2. Create `mern-auditor-platform/backend/.env.example` with `MONGO_URI`, `PORT`, `GATEWAY_PORT` variables.
-3. Create `mern-auditor-platform/backend/server.js` — sets up Express, CORS, JSON body parser, loads policy, connects Mongoose, mounts the audit router, starts HTTP listener.
-4. Create `mern-auditor-platform/backend/config/policyLoader.js` — reads `.ai-policy.json` from a configurable path (env var `POLICY_PATH`, defaults to `../../mock-enterprise-target/.ai-policy.json`), validates with AJV, caches result.
+1. Create `mern-auditor-platform/backend/package.json` with deps: `express`, `mongoose`, `cors`, `dotenv`, `ajv`. ✔
+2. Create `mern-auditor-platform/backend/.env.example` with `PORT`, `MONGO_URI`, `POLICY_PATH`, `CORS_ORIGIN`. ✔
+3. Create `mern-auditor-platform/backend/config/policyLoader.js` — loads, validates, caches policy. ✔
+4. Create `mern-auditor-platform/backend/server.js` — Express bootstrap, mounts routes after DB ready. ✔
+5. Create `mern-auditor-platform/backend/routes/auditRoutes.js` — stub routes (501) for clean startup. ✔
+6. `npm install` → 124 packages, 0 vulnerabilities. ✔
 
 ### Relevant Context
-- `mern-auditor-platform/package.json` is currently empty (only `name`, `version`, `main`). Dependencies must be added.
-- Mongoose 7+ changes: use `await mongoose.connect(uri)` — no callback style.
-- The frontend in Sub-Task 7 runs on Vite's default port `5173`.
+- Port is `5000` (matches the pre-commit hook `GATEWAY_PORT`), not `3001` as originally noted in plan.
+- `auditRoutes.js` stub will be fully replaced in Sub-Task 6.
+- Policy CORS origin is comma-split to support multiple origins from one env var.
+- `server.js` requires `./routes/auditRoutes` lazily (after `mongoose.connect`) so Mongoose models have a live connection before registration.
 
 ---
 
 ## Sub-Task 4 — Subagent Orchestrator: Three-Subagent Pipeline
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 ### Intent
 Build the core intelligence of BobGuard — the three-subagent analysis pipeline. Each subagent is an independent async function. The orchestrator runs Subagents A and B in parallel, collects results, then conditionally triggers Subagent C if B fails. The orchestrator also computes the AI provenance ratio from the diff line count.
