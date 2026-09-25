@@ -1,0 +1,156 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ai-policy.schema.json",
+  "title": "BobGuard AI Policy",
+  "description": "JSON Schema for the BobGuard enterprise governance policy file (.ai-policy.json).",
+  "type": "object",
+  "required": ["metadata", "governance_rules", "compliance_rules", "enforcement", "provenance"],
+  "additionalProperties": false,
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["policyVersion", "lastUpdated", "owner"],
+      "additionalProperties": false,
+      "properties": {
+        "policyVersion": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "Semantic version of the policy file."
+        },
+        "lastUpdated": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "ISO 8601 date the policy was last modified (YYYY-MM-DD)."
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Team or individual responsible for this policy."
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "governance_rules": {
+      "type": "object",
+      "required": ["security_framework", "banned_vulnerabilities"],
+      "additionalProperties": false,
+      "properties": {
+        "security_framework": {
+          "type": "string",
+          "enum": ["OWASP_Top_10", "NIST_CSF", "ISO_27001", "SOC2"],
+          "description": "The security framework used to classify vulnerabilities."
+        },
+        "banned_vulnerabilities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "List of vulnerability names that cause a commit to be blocked."
+        },
+        "vulnerability_patterns": {
+          "type": "object",
+          "description": "Regex pattern arrays keyed by vulnerability type slug.",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "compliance_rules": {
+      "type": "object",
+      "required": ["banned_licenses", "block_on_hallucinated_deps"],
+      "additionalProperties": false,
+      "properties": {
+        "banned_licenses": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "SPDX license identifiers that are forbidden in AI-generated code."
+        },
+        "license_patterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Regex patterns to detect license headers in diff additions."
+        },
+        "block_on_hallucinated_deps": {
+          "type": "boolean",
+          "description": "If true, commits that reference non-existent packages are blocked."
+        },
+        "package_registries": {
+          "type": "object",
+          "description": "Registry base URLs used to verify package existence.",
+          "additionalProperties": { "type": "string" }
+        },
+        "allowed_licenses": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "SPDX identifiers of explicitly permitted open-source licenses."
+        }
+      }
+    },
+    "enforcement": {
+      "type": "object",
+      "required": ["block_commit_on_failure", "attempt_auto_remediation"],
+      "additionalProperties": false,
+      "properties": {
+        "block_commit_on_failure": {
+          "type": "boolean",
+          "description": "If true, a failed audit causes the pre-commit hook to exit 1."
+        },
+        "attempt_auto_remediation": {
+          "type": "boolean",
+          "description": "If true, Subagent C is invoked to generate a fix patch when violations are found."
+        },
+        "fail_open_on_gateway_timeout": {
+          "type": "boolean",
+          "description": "If true, the hook exits 0 (allows commit) when the gateway is unreachable."
+        },
+        "gateway_timeout_ms": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 60000,
+          "description": "Milliseconds before the pre-commit hook times out waiting for the gateway."
+        },
+        "notify_channels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["console", "slack", "email", "webhook"]
+          },
+          "description": "Notification channels for audit events."
+        },
+        "audit_all_commits": {
+          "type": "boolean",
+          "description": "If true, every commit is logged even if no violations are found."
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["hash_algorithm", "hash_scope", "track_ai_ratio"],
+      "additionalProperties": false,
+      "properties": {
+        "hash_algorithm": {
+          "type": "string",
+          "enum": ["sha256", "sha512"],
+          "description": "Cryptographic hash algorithm used for the provenance seal."
+        },
+        "hash_scope": {
+          "type": "string",
+          "enum": ["diff_only", "full_audit_payload"],
+          "description": "What is included in the data being hashed for tamper-evidence."
+        },
+        "track_ai_ratio": {
+          "type": "boolean",
+          "description": "If true, the AI vs human line ratio is computed and stored per commit."
+        },
+        "ai_author_tag": {
+          "type": "string",
+          "description": "Human-readable label for the AI coding agent (e.g. IBM Bob 2.0)."
+        }
+      }
+    }
+  }
+}
