@@ -1,0 +1,94 @@
+{
+  "metadata": {
+    "policyVersion": "1.0.0",
+    "lastUpdated": "2025-01-01",
+    "owner": "Enterprise Security & Compliance Team",
+    "description": "BobGuard AI Provenance Gateway — Enterprise governance ruleset for AI-generated code commits."
+  },
+  "governance_rules": {
+    "security_framework": "OWASP_Top_10",
+    "banned_vulnerabilities": [
+      "NoSQL Injection",
+      "SQL Injection",
+      "Hardcoded Secrets",
+      "Broken Authentication",
+      "Open Redirect",
+      "Cross-Site Scripting",
+      "Insecure Direct Object Reference",
+      "Security Misconfiguration"
+    ],
+    "vulnerability_patterns": {
+      "nosql_injection": [
+        "req\\.body\\.[a-zA-Z_]+\\s*\\$",
+        "\\$where\\s*:",
+        "\\$gt\\s*:\\s*['\"]",
+        "\\$ne\\s*:\\s*(null|undefined|0|['\"])"
+      ],
+      "hardcoded_secrets": [
+        "password\\s*=\\s*['\"][^'\"]{4,}['\"]",
+        "secret\\s*=\\s*['\"][^'\"]{4,}['\"]",
+        "api_?key\\s*=\\s*['\"][^'\"]{4,}['\"]",
+        "token\\s*=\\s*['\"][^'\"]{8,}['\"]",
+        "private_?key\\s*=\\s*['\"][^'\"]{4,}['\"]"
+      ],
+      "open_redirect": [
+        "res\\.redirect\\s*\\(\\s*req\\.(query|body|params)\\.",
+        "location\\.href\\s*=\\s*req\\.(query|body|params)\\."
+      ],
+      "broken_auth": [
+        "compareSync\\s*\\(\\s*password\\s*,\\s*user\\.password\\s*\\)",
+        "password\\s*===\\s*req\\.",
+        "md5\\s*\\("
+      ]
+    }
+  },
+  "compliance_rules": {
+    "banned_licenses": [
+      "GPL-2.0",
+      "GPL-2.0-only",
+      "GPL-2.0-or-later",
+      "GPL-3.0",
+      "GPL-3.0-only",
+      "GPL-3.0-or-later",
+      "AGPL-3.0",
+      "AGPL-3.0-only",
+      "AGPL-3.0-or-later",
+      "SSPL-1.0",
+      "BUSL-1.1"
+    ],
+    "license_patterns": [
+      "SPDX-License-Identifier:\\s*(GPL|AGPL|SSPL|BUSL)",
+      "@license\\s+(GPL|AGPL)",
+      "GNU General Public License",
+      "GNU Affero General Public License"
+    ],
+    "block_on_hallucinated_deps": true,
+    "package_registries": {
+      "npm": "https://registry.npmjs.org",
+      "pypi": "https://pypi.org/pypi"
+    },
+    "allowed_licenses": [
+      "MIT",
+      "Apache-2.0",
+      "BSD-2-Clause",
+      "BSD-3-Clause",
+      "ISC",
+      "0BSD",
+      "Unlicense"
+    ]
+  },
+  "enforcement": {
+    "block_commit_on_failure": true,
+    "attempt_auto_remediation": true,
+    "fail_open_on_gateway_timeout": true,
+    "gateway_timeout_ms": 15000,
+    "notify_channels": ["console"],
+    "audit_all_commits": true
+  },
+  "provenance": {
+    "hash_algorithm": "sha256",
+    "hash_scope": "full_audit_payload",
+    "track_ai_ratio": true,
+    "ai_author_tag": "IBM Bob 2.0"
+  }
+}
