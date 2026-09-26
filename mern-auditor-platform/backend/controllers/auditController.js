@@ -22,6 +22,7 @@ const https    = require("https");
 
 const { getPolicy }          = require("../config/policyLoader");
 const { runRemediationTask } = require("../services/bobAgentService");
+const AuditRecord            = require("../models/AuditRecord");
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -406,15 +407,33 @@ async function analyzeCommit(req, res, next) {
     }
 
     // ── Enforcement decision ─────────────────────────────────────────────────
-    const hasFailed = !licenseStatus.passed || !securityStatus.passed;
-    const blocked   = hasFailed && policy.enforcement.block_commit_on_failure;
+    const hasFailed   = !licenseStatus.passed || !securityStatus.passed;
+    const blocked     = hasFailed && policy.enforcement.block_commit_on_failure;
     const allowCommit = !blocked;
+
+    // ── Persist audit record to MongoDB ──────────────────────────────────────
+    const record = await AuditRecord.create({
+      commitSha,
+      branch,
+      author,
+      repoName,
+      taskId,
+      diff,
+      licenseStatus,
+      securityStatus,
+      remediation,
+      aiRatio,
+      sha256ProvenanceHash,
+      blocked,
+      allowCommit,
+      violations,
+    });
 
     // ── Response ─────────────────────────────────────────────────────────────
     return res.status(200).json({
       allowCommit,
       blocked,
-      auditId:              null,  // populated in Sub-Task 5 after DB write
+      auditId:              record._id,
       repoName,
       author,
       branch,

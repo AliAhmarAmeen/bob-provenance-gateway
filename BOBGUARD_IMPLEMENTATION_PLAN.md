@@ -144,7 +144,7 @@ Build the core intelligence of BobGuard — the three-subagent analysis pipeline
 
 ## Sub-Task 5 — MongoDB Schema & Persistence Layer
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 ### Intent
 Define the Mongoose schema for `AuditRecord` — the tamper-evident AI-BOM ledger entry — and add the persistence call to the audit controller so every analyzed commit is written to the database.
@@ -156,10 +156,10 @@ Define the Mongoose schema for `AuditRecord` — the tamper-evident AI-BOM ledge
 - The `commitSha` field is indexed for deduplication queries.
 
 ### Todo List
-1. Create `mern-auditor-platform/backend/models/AuditRecord.js` with the full Mongoose schema covering all fields from `MASTER_CONTEXT.md` §5.B plus `commitSha`, `branch`, `author`, `createdAt`.
-2. Add schema-level validation: `aiRatio.aiPercent` must be between 0 and 100; `sha256ProvenanceHash` must match `/^[a-f0-9]{64}$/`.
-3. Add indexes: `sha256ProvenanceHash` (unique), `commitSha`, `createdAt` (descending for dashboard queries).
-4. In `auditController.js`, after completing the subagent pipeline, call `AuditRecord.create(payload)` and include the resulting `_id` in the API response.
+1. Create `mern-auditor-platform/backend/models/AuditRecord.js` with the full Mongoose schema covering all fields from `MASTER_CONTEXT.md` §5.B plus `commitSha`, `branch`, `author`, `createdAt`. ✔
+2. Add schema-level validation: `aiRatio.aiPercent` must be between 0 and 100; `sha256ProvenanceHash` must match `/^[a-f0-9]{64}$/`. ✔
+3. Add indexes: `sha256ProvenanceHash` (unique), `commitSha`, `createdAt` (descending for dashboard queries). ✔
+4. In `auditController.js`, after completing the subagent pipeline, call `AuditRecord.create(payload)` and include the resulting `_id` in the API response. ✔
 
 ### Relevant Context
 - Mongoose 7 removes the `useFindAndModify` and `useNewUrlParser` options — do not include them.
