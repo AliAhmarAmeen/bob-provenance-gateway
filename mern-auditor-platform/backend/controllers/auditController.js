@@ -476,16 +476,30 @@ async function analyzeCommit(req, res, next) {
  */
 async function getRecords(req, res, next) {
   try {
-    const page  = Math.max(0, parseInt(req.query.page, 10) || 0);
-    const limit = 20;
+    const page  = Math.max(0, parseInt(req.query.page,  10) || 0);
+    const limit = Math.min(Math.max(1, parseInt(req.query.limit, 10) || 20), 9999);
+
+    // Build optional date-range filter on createdAt
+    const filter = {};
+    const dateFrom = new Date(req.query.dateFrom);
+    const dateTo   = new Date(req.query.dateTo);
+    if (req.query.dateFrom && !isNaN(dateFrom)) {
+      filter.createdAt = { ...filter.createdAt, $gte: dateFrom };
+    }
+    if (req.query.dateTo && !isNaN(dateTo)) {
+      // Include the full end day by advancing to end-of-day
+      const endOfDay = new Date(dateTo);
+      endOfDay.setHours(23, 59, 59, 999);
+      filter.createdAt = { ...filter.createdAt, $lte: endOfDay };
+    }
 
     const [records, total] = await Promise.all([
-      AuditRecord.find()
+      AuditRecord.find(filter)
         .sort({ createdAt: -1 })
         .skip(page * limit)
         .limit(limit)
         .lean(),
-      AuditRecord.countDocuments(),
+      AuditRecord.countDocuments(filter),
     ]);
 
     return res.status(200).json({ total, page, records });

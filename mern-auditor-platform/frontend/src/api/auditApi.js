@@ -21,12 +21,18 @@ export async function fetchStats() {
 }
 
 /**
- * Fetch the paginated audit log (newest first, 20 per page).
- * @param {number} [page=0]  0-based page index
+ * Fetch the paginated audit log (newest first).
+ * @param {number} [page=0]       0-based page index
+ * @param {string} [dateFrom=""]  ISO date "YYYY-MM-DD" or empty string
+ * @param {string} [dateTo=""]    ISO date "YYYY-MM-DD" or empty string
+ * @param {number} [limit=20]     Records per page (use 9999 to fetch all)
  * @returns {Promise<{ total: number, page: number, records: object[] }>}
  */
-export async function fetchRecords(page = 0) {
-  const { data } = await client.get("/records", { params: { page } });
+export async function fetchRecords(page = 0, dateFrom = "", dateTo = "", limit = 20) {
+  const params = { page, limit };
+  if (dateFrom) params.dateFrom = dateFrom;
+  if (dateTo)   params.dateTo   = dateTo;
+  const { data } = await client.get("/records", { params });
   return data;
 }
 
