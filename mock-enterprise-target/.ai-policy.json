@@ -25,11 +25,13 @@
         "\\$ne\\s*:\\s*(null|undefined|0|['\"])"
       ],
       "hardcoded_secrets": [
-        "password\\s*=\\s*['\"][^'\"]{4,}['\"]",
-        "secret\\s*=\\s*['\"][^'\"]{4,}['\"]",
-        "api_?key\\s*=\\s*['\"][^'\"]{4,}['\"]",
-        "token\\s*=\\s*['\"][^'\"]{8,}['\"]",
-        "private_?key\\s*=\\s*['\"][^'\"]{4,}['\"]"
+        "password\\s*[=:]\\s*['\"][^'\"]{4,}['\"]",
+        "secret\\s*[=:]\\s*['\"][^'\"]{4,}['\"]",
+        "api_?key\\s*[=:]\\s*['\"][^'\"]{4,}['\"]",
+        "token\\s*[=:]\\s*['\"][^'\"]{8,}['\"]",
+        "private_?key\\s*[=:]\\s*['\"][^'\"]{4,}['\"]",
+        "cookieSecret\\s*:\\s*['\"][^'\"]{4,}['\"]",
+        "cryptoKey\\s*:\\s*['\"][^'\"]{4,}['\"]"
       ],
       "open_redirect": [
         "res\\.redirect\\s*\\(\\s*req\\.(query|body|params)\\.",
@@ -39,6 +41,60 @@
         "compareSync\\s*\\(\\s*password\\s*,\\s*user\\.password\\s*\\)",
         "password\\s*===\\s*req\\.",
         "md5\\s*\\("
+      ],
+      "eval_injection": [
+        "eval\\s*\\(",
+        "new\\s+Function\\s*\\(",
+        "setTimeout\\s*\\(\\s*['\"]"
+      ],
+      "plaintext_password_store": [
+        "password\\s*,\\s*\\/\\/",
+        "password\\s*:\\s*password(?!\\s*\\.hash|\\s*\\.bcrypt|\\s*hashSync|\\s*hash\\s*\\()",
+        "user\\.password\\s*=\\s*(?!bcrypt|hash|encrypt)"
+      ],
+      "plaintext_password_compare": [
+        "fromDB\\s*===\\s*fromUser",
+        "fromDB\\s*==\\s*fromUser",
+        "password\\s*===\\s*[a-zA-Z_][a-zA-Z0-9_.]*\\.password",
+        "password\\s*==\\s*[a-zA-Z_][a-zA-Z0-9_.]*\\.password"
+      ],
+      "xss_autoescape_disabled": [
+        "autoescape\\s*:\\s*false",
+        "sanitize\\s*:\\s*false",
+        "escapeHTML\\s*:\\s*false"
+      ],
+      "xss_unescaped_write": [
+        "res\\.write\\s*\\(\\s*body\\s*\\)",
+        "res\\.send\\s*\\(\\s*body\\s*\\)",
+        "res\\.end\\s*\\(\\s*body\\s*\\)"
+      ],
+      "idor": [
+        "req\\.params\\.[a-zA-Z]*[Uu]ser[Ii]d",
+        "req\\.params\\.[a-zA-Z]*[Aa]ccount[Ii]d",
+        "\\{\\s*userId\\s*\\}\\s*=\\s*req\\.params",
+        "\\{\\s*userId[^}]*\\}\\s*=\\s*req\\.body"
+      ],
+      "ssrf": [
+        "needle\\.get\\s*\\(\\s*[a-zA-Z_][a-zA-Z0-9_.]*\\s*,",
+        "require\\s*\\(['\"]request['\"]\\).*req\\.(query|body|params)\\.",
+        "http\\.get\\s*\\(.*req\\.(query|body|params)\\."
+      ],
+      "redos": [
+        "\\([^)]+\\+\\)\\+",
+        "\\([^)]+\\*\\)\\*",
+        "\\([^)]+\\+\\)\\*"
+      ],
+      "plaintext_pii": [
+        "user\\.ssn\\s*=\\s*ssn",
+        "user\\.dob\\s*=\\s*dob",
+        "\\.ssn\\s*=\\s*(?!encrypt|hash|cipher)",
+        "\\.dob\\s*=\\s*(?!encrypt|hash|cipher)"
+      ],
+      "session_fixation": [
+        "req\\.session\\.[a-zA-Z]+\\s*=\\s*[a-zA-Z_][a-zA-Z0-9_.]*\\._id"
+      ],
+      "http_insecure": [
+        "http\\.createServer\\s*\\("
       ]
     }
   },

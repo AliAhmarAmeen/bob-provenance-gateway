@@ -167,10 +167,21 @@ async function runSubagentB(diff, policy) {
   const vulnPatterns    = policy.governance_rules.vulnerability_patterns;
 
   const PATTERN_CATEGORIES = {
-    nosql_injection:  "NoSQL Injection",
-    hardcoded_secrets: "Hardcoded Secrets",
-    open_redirect:    "Open Redirect",
-    broken_auth:      "Broken Authentication",
+    nosql_injection:           "NoSQL Injection",
+    hardcoded_secrets:         "Hardcoded Secrets",
+    open_redirect:             "Open Redirect",
+    broken_auth:               "Broken Authentication",
+    eval_injection:            "Code Injection (eval)",
+    plaintext_password_store:  "Plaintext Password Storage",
+    plaintext_password_compare:"Plaintext Password Comparison",
+    xss_autoescape_disabled:   "XSS - Autoescape Disabled",
+    xss_unescaped_write:       "XSS - Unescaped Response Write",
+    idor:                      "Insecure Direct Object Reference",
+    ssrf:                      "Server-Side Request Forgery",
+    redos:                     "ReDoS - Catastrophic Backtracking",
+    plaintext_pii:             "Sensitive Data Exposure - PII",
+    session_fixation:          "Session Fixation",
+    http_insecure:             "Insecure HTTP Server",
   };
 
   for (const [key, label] of Object.entries(PATTERN_CATEGORIES)) {
