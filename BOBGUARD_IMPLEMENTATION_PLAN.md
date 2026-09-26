@@ -202,23 +202,23 @@ Wire up the Express router with all API endpoints required by the frontend dashb
 
 ## Sub-Task 7 — Bob Agent Service (Stub + Interface)
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 ### Intent
 Create the `bobAgentService` that represents the integration point with IBM Bob 2.0. The initial implementation is a functional stub that simulates the auto-remediation output for known vulnerability patterns found in `mock-enterprise-target`. The interface is designed so swapping in real Bob CLI calls later requires no changes to `auditController.js`.
 
 ### Expected Outcomes
-- `mern-auditor-platform/backend/services/bobAgentService.js` exports `runRemediationTask(violationContext)`.
-- For a NoSQL Injection violation, the stub returns a patch that wraps the unsafe query parameter in `JSON.stringify()` / sanitization.
-- For a Hardcoded Secret violation, the stub returns a patch that moves the secret to an environment variable reference.
-- The service returns `{ patchAvailable: true, patchContent: "<base64 unified diff>" }`.
-- If no known remediation exists, returns `{ patchAvailable: false, patchContent: null }`.
+- `mern-auditor-platform/backend/services/bobAgentService.js` exports `runRemediationTask(violationContext)`. ✔
+- For a NoSQL Injection violation, the stub returns a patch that wraps the unsafe query parameter in `JSON.stringify()` / sanitization. ✔
+- For a Hardcoded Secret violation, the stub returns a patch that moves the secret to an environment variable reference. ✔
+- The service returns `{ patchAvailable: true, patchContent: "<base64 unified diff>" }`. ✔
+- If no known remediation exists, returns `{ patchAvailable: false, patchContent: null }`. ✔
 
 ### Todo List
-1. Create `mern-auditor-platform/backend/services/bobAgentService.js`.
-2. Define a `REMEDIATION_TEMPLATES` map keyed by vulnerability type (e.g. `"NoSQL Injection"`, `"Hardcoded Secrets"`).
-3. Implement `runRemediationTask(violationContext)` — matches `violationContext.vulnerabilityType` against templates, encodes the patch in Base64, returns the result object.
-4. Add a `// TODO: Replace stub with: execSync(\`bob run remediation-task ...\`)` comment block documenting the real integration path.
+1. Create `mern-auditor-platform/backend/services/bobAgentService.js`. ✔
+2. Define a `REMEDIATION_TEMPLATES` map keyed by vulnerability type (e.g. `"NoSQL Injection"`, `"Hardcoded Secrets"`). ✔ (4 keys: NoSQL Injection, Hardcoded Secrets, Open Redirect, Broken Authentication)
+3. Implement `runRemediationTask(violationContext)` — matches `violationContext.vulnerabilityType` against templates, encodes the patch in Base64, returns the result object. ✔
+4. Add a `// TODO: Replace stub with: execSync(\`bob run remediation-task ...\`)` comment block documenting the real integration path. ✔
 
 ### Relevant Context
 - `violationContext` shape: `{ vulnerabilityType, affectedFile, affectedLine, diffSnippet }`.
