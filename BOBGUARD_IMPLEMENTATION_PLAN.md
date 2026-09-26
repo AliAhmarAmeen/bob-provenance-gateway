@@ -169,30 +169,30 @@ Define the Mongoose schema for `AuditRecord` — the tamper-evident AI-BOM ledge
 
 ## Sub-Task 6 — Express Routes & Stats Aggregation Endpoint
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 ### Intent
 Wire up the Express router with all API endpoints required by the frontend dashboard and the pre-commit hook. Includes a MongoDB aggregation pipeline for the stats endpoint so the frontend doesn't need to do client-side aggregation.
 
 ### Expected Outcomes
-- `mern-auditor-platform/backend/routes/auditRoutes.js` defines all routes.
-- `POST /api/audit/analyze` — triggers the subagent pipeline (from Sub-Task 4).
-- `GET /api/audit/records` — returns paginated list of `AuditRecord` documents (latest first, 20 per page).
-- `GET /api/audit/stats` — returns a single pre-aggregated object with all five dashboard metrics.
-- `GET /api/audit/records/:id` — returns a single `AuditRecord` by MongoDB `_id`.
-- All endpoints return `Content-Type: application/json`.
+- `mern-auditor-platform/backend/routes/auditRoutes.js` defines all routes. ✔
+- `POST /api/audit/analyze` — triggers the subagent pipeline (from Sub-Task 4). ✔
+- `GET /api/audit/records` — returns paginated list of `AuditRecord` documents (latest first, 20 per page). ✔
+- `GET /api/audit/stats` — returns a single pre-aggregated object with all five dashboard metrics. ✔
+- `GET /api/audit/records/:id` — returns a single `AuditRecord` by MongoDB `_id`. ✔
+- All endpoints return `Content-Type: application/json`. ✔
 
 ### Todo List
-1. Create `mern-auditor-platform/backend/routes/auditRoutes.js` and mount it in `server.js` under `/api/audit`.
-2. Add `getRecords` handler in `auditController.js` — uses `AuditRecord.find().sort({ createdAt: -1 }).limit(20).skip(page * 20)`.
-3. Add `getStats` handler in `auditController.js` — runs a single Mongoose aggregation pipeline that computes:
+1. Create `mern-auditor-platform/backend/routes/auditRoutes.js` and mount it in `server.js` under `/api/audit`. ✔
+2. Add `getRecords` handler in `auditController.js` — uses `AuditRecord.find().sort({ createdAt: -1 }).limit(20).skip(page * 20)`. ✔
+3. Add `getStats` handler in `auditController.js` — runs a single Mongoose aggregation pipeline that computes: ✔
    - Average `aiRatio.aiPercent` across all records → `provenanceRatio`
    - Count of records where `licenseStatus.compliant === false` → `licenseContaminationIndex`
    - Sum of `securityStatus.vulnerabilities.length` divided by total AI lines / 100 → `vulnerabilityDensity`
    - Sum of `securityStatus.hallucinatedPackages.length` → `phantomPackagesDetected`
    - Count of records where `sha256ProvenanceHash` is non-null → `tamperEvidenceState`
-4. Add `getRecord` handler for single-record lookup.
-5. Add error-handling middleware in `server.js` that catches async errors and returns `{ error: message }` with a 500 status.
+4. Add `getRecord` handler for single-record lookup. ✔
+5. Add error-handling middleware in `server.js` that catches async errors and returns `{ error: message }` with a 500 status. ✔
 
 ### Relevant Context
 - MongoDB aggregation `$unwind` is needed for array fields (`vulnerabilities`, `hallucinatedPackages`).

@@ -453,10 +453,185 @@ async function analyzeCommit(req, res, next) {
   }
 }
 
+// ─── GET /api/audit/records ───────────────────────────────────────────────────
+
+/**
+ * Return a paginated list of AuditRecord documents, newest first.
+ *
+ * Query params:
+ *   page  {number}  0-based page index (default 0)
+ *
+ * Response: { total, page, records: AuditRecord[] }
+ */
+async function getRecords(req, res, next) {
+  try {
+    const page  = Math.max(0, parseInt(req.query.page, 10) || 0);
+    const limit = 20;
+
+    const [records, total] = await Promise.all([
+      AuditRecord.find()
+        .sort({ createdAt: -1 })
+        .skip(page * limit)
+        .limit(limit)
+        .lean(),
+      AuditRecord.countDocuments(),
+    ]);
+
+    return res.status(200).json({ total, page, records });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ─── GET /api/audit/stats ─────────────────────────────────────────────────────
+
+/**
+ * Return a single pre-aggregated object with all five dashboard metrics.
+ *
+ * Metrics:
+ *   provenanceRatio          — average aiRatio.aiPercent across all records
+ *   licenseContaminationIndex — count of records where licenseStatus.compliant === false
+ *   vulnerabilityDensity      — total vulnerability hits per 100 AI-authored lines
+ *   phantomPackagesDetected   — total count of hallucinated packages across all records
+ *   tamperEvidenceState       — count of records with a valid sha256ProvenanceHash
+ *
+ * Computed via a single MongoDB aggregation pipeline.
+ */
+async function getStats(req, res, next) {
+  try {
+    const pipeline = [
+      // ── Stage 1: project only the fields we need ───────────────────────────
+      {
+        $project: {
+          aiPercent:          "$aiRatio.aiPercent",
+          aiLines:            "$aiRatio.aiLines",
+          licenseCompliant:   "$licenseStatus.compliant",
+          vulnerabilities:    "$securityStatus.vulnerabilities",
+          hallucinatedPkgs:   "$securityStatus.hallucinatedPackages",
+          sha256ProvenanceHash: 1,
+        },
+      },
+
+      // ── Stage 2: unwind vulnerabilities (preserveNullAndEmptyArrays keeps
+      //             records that have zero vulnerabilities in the pipeline) ────
+      {
+        $unwind: {
+          path: "$vulnerabilities",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // ── Stage 3: group back with running accumulators ──────────────────────
+      {
+        $group: {
+          _id:                      null,
+          totalRecords:             { $sum: 1 },
+          sumAiPercent:             { $sum: "$aiPercent" },
+          totalAiLines:             { $sum: "$aiLines" },
+          licenseViolations:        {
+            $sum: { $cond: [{ $eq: ["$licenseCompliant", false] }, 1, 0] },
+          },
+          totalVulnerabilities:     {
+            $sum: { $cond: [{ $ifNull: ["$vulnerabilities", false] }, 1, 0] },
+          },
+          totalHallucinated: {
+            $sum: { $size: { $ifNull: ["$hallucinatedPkgs", []] } },
+          },
+          recordsWithHash: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $gt:  [{ $strLenCP: { $ifNull: ["$sha256ProvenanceHash", ""] } }, 0] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+
+      // ── Stage 4: shape the final output document ───────────────────────────
+      {
+        $project: {
+          _id:                      0,
+          totalRecords:             1,
+          provenanceRatio: {
+            $cond: [
+              { $gt: ["$totalRecords", 0] },
+              { $divide: ["$sumAiPercent", "$totalRecords"] },
+              0,
+            ],
+          },
+          licenseContaminationIndex: "$licenseViolations",
+          vulnerabilityDensity: {
+            $cond: [
+              { $gt: ["$totalAiLines", 0] },
+              { $multiply: [{ $divide: ["$totalVulnerabilities", "$totalAiLines"] }, 100] },
+              0,
+            ],
+          },
+          phantomPackagesDetected:  "$totalHallucinated",
+          tamperEvidenceState:      "$recordsWithHash",
+        },
+      },
+    ];
+
+    const [stats] = await AuditRecord.aggregate(pipeline);
+
+    // Return zeroed-out metrics when the collection is empty
+    return res.status(200).json(
+      stats || {
+        totalRecords:              0,
+        provenanceRatio:           0,
+        licenseContaminationIndex: 0,
+        vulnerabilityDensity:      0,
+        phantomPackagesDetected:   0,
+        tamperEvidenceState:       0,
+      }
+    );
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ─── GET /api/audit/records/:id ───────────────────────────────────────────────
+
+/**
+ * Return a single AuditRecord by its MongoDB _id.
+ * Responds 404 when the id is not found, 400 when the id is malformed.
+ */
+async function getRecord(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    // Mongoose will throw a CastError for a malformed ObjectId
+    let record;
+    try {
+      record = await AuditRecord.findById(id).lean();
+    } catch (castErr) {
+      return res.status(400).json({ error: `Invalid record id: ${id}` });
+    }
+
+    if (!record) {
+      return res.status(404).json({ error: `Audit record not found: ${id}` });
+    }
+
+    return res.status(200).json(record);
+  } catch (err) {
+    next(err);
+  }
+}
+
 // ─── Exports ──────────────────────────────────────────────────────────────────
 
 module.exports = {
   analyzeCommit,
+  getRecords,
+  getStats,
+  getRecord,
   // Export internals for unit testing
   runSubagentA,
   runSubagentB,

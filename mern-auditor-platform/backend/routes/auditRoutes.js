@@ -1,40 +1,45 @@
 "use strict";
 
 /**
- * Audit Routes
+ * BobGuard — Audit Routes
  *
- * POST /api/audit/analyze  — primary endpoint; triggers the three-subagent pipeline.
- * POST /api/audit/verify   — alias used by the pre-commit hook (same handler).
- * GET  /api/audit/records  — paginated audit log (stub until Sub-Task 6).
- * GET  /api/audit/stats    — aggregated dashboard metrics (stub until Sub-Task 6).
- * GET  /api/audit/records/:id — single record lookup (stub until Sub-Task 6).
+ * All routes are mounted at /api/audit (see server.js).
+ *
+ * POST /analyze          — run three-subagent pipeline + persist AuditRecord
+ * POST /verify           — alias used by the Git pre-commit hook (same handler)
+ * GET  /records          — paginated list of AuditRecord documents (newest first)
+ * GET  /records/:id      — single AuditRecord by MongoDB _id
+ * GET  /stats            — pre-aggregated dashboard metrics (single pipeline)
  */
 
 const express = require("express");
 const router  = express.Router();
 
-const { analyzeCommit } = require("../controllers/auditController");
+const {
+  analyzeCommit,
+  getRecords,
+  getRecord,
+  getStats,
+} = require("../controllers/auditController");
 
-// ─── Active endpoints (Sub-Task 4) ────────────────────────────────────────────
+// ─── Write / analysis endpoints ───────────────────────────────────────────────
 
-// Primary analysis endpoint — React dashboard will call this
+// Primary analysis endpoint — called by the React dashboard and directly
 router.post("/analyze", analyzeCommit);
 
-// Alias used by the Git pre-commit hook (same pipeline, same handler)
+// Alias used by the Git pre-commit hook (/api/audit/verify)
 router.post("/verify", analyzeCommit);
 
-// ─── Stub endpoints (implemented in Sub-Task 6) ────────────────────────────────
+// ─── Read endpoints ───────────────────────────────────────────────────────────
 
-router.get("/records", (_req, res) => {
-  res.status(501).json({ error: "Not implemented yet — Sub-Task 6 pending." });
-});
+// Paginated audit log — ?page=0 (0-based)
+router.get("/records", getRecords);
 
-router.get("/stats", (_req, res) => {
-  res.status(501).json({ error: "Not implemented yet — Sub-Task 6 pending." });
-});
+// Single-record lookup — must be declared before /records to avoid ambiguity,
+// but Express matches by insertion order so the more-specific path is fine here.
+router.get("/records/:id", getRecord);
 
-router.get("/records/:id", (_req, res) => {
-  res.status(501).json({ error: "Not implemented yet — Sub-Task 6 pending." });
-});
+// Aggregated dashboard metrics
+router.get("/stats", getStats);
 
 module.exports = router;
