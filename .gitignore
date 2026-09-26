@@ -1,10 +1,11 @@
-# Node dependencies
+﻿# Node dependencies
 node_modules/
 npm-debug.log
 
-# Environment variables
+# Environment variables — real secrets only; .env.example is intentionally committed
 .env
 .env.local
+.env.*.local
 
 # OS generated files
 .DS_Store
