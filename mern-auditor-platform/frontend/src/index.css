@@ -1,0 +1,315 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   BobGuard — Global Reset & Typography
+   Dark enterprise theme. All component styles are co-located here (no
+   CSS Modules) so the build remains zero-config for this project stage.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* ── Tokens ─────────────────────────────────────────────────────────────── */
+:root {
+  --bg:          #0d1117;
+  --surface:     #161b22;
+  --surface-2:   #21262d;
+  --border:      #30363d;
+  --text:        #e6edf3;
+  --muted:       #8b949e;
+  --accent:      #388bfd;
+
+  --ok:          #3fb950;
+  --warn:        #d29922;
+  --fail:        #f85149;
+  --neutral:     #8b949e;
+
+  --font-mono:   "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  --font-ui:     -apple-system, "Segoe UI", system-ui, sans-serif;
+  --radius:      6px;
+}
+
+/* ── Base ────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 15px; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+#root { min-height: 100vh; }
+
+/* ── Dashboard shell ─────────────────────────────────────────────────────── */
+.dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+.dashboard__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.dashboard__title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.dashboard__title-icon {
+  color: var(--accent);
+  margin-right: 0.3rem;
+}
+
+.dashboard__title-sub {
+  font-weight: 400;
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+.dashboard__poll-note {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.dashboard__error-banner {
+  background: rgba(248, 81, 73, 0.12);
+  border: 1px solid var(--fail);
+  color: var(--fail);
+  border-radius: var(--radius);
+  padding: 0.65rem 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.88rem;
+}
+
+.dashboard__loading {
+  color: var(--muted);
+  font-size: 0.88rem;
+  padding: 1rem 0;
+}
+
+/* ── Metrics grid ────────────────────────────────────────────────────────── */
+.dashboard__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.metric-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border-top: 3px solid var(--neutral);
+  transition: border-color 0.2s;
+}
+
+.metric-card--ok   { border-top-color: var(--ok);   }
+.metric-card--warn { border-top-color: var(--warn);  }
+.metric-card--fail { border-top-color: var(--fail);  }
+.metric-card--neutral { border-top-color: var(--neutral); }
+
+.metric-card__title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.metric-card__value {
+  font-size: 1.7rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text);
+}
+
+.metric-card__unit {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 0.15rem;
+}
+
+.metric-card__detail {
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+/* ── Section headings ────────────────────────────────────────────────────── */
+.dashboard__section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--text);
+}
+
+.dashboard__section-sub {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* ── Audit table ─────────────────────────────────────────────────────────── */
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+}
+
+.audit-table th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+
+.audit-table__row {
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+
+.audit-table__row:hover { background: var(--surface-2); }
+
+.audit-table__row td {
+  padding: 0.55rem 0.75rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.audit-table__row--pass { }
+.audit-table__row--fail { }
+
+.audit-table__mono {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+  word-break: break-all;
+  white-space: normal;
+}
+
+.audit-table__author { color: var(--text); }
+.audit-table__branch { color: var(--muted); font-size: 0.78rem; }
+
+.audit-table__empty {
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 1rem 0;
+}
+
+/* ── Detail panel ────────────────────────────────────────────────────────── */
+.audit-table__detail-row td {
+  padding: 0;
+  background: var(--surface);
+}
+
+.audit-detail {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.audit-detail__section-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 600;
+  display: inline;
+  margin-right: 0.4rem;
+}
+
+.audit-detail__violations ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.4rem;
+}
+
+.audit-detail__violations li {
+  font-size: 0.82rem;
+  color: var(--fail);
+  padding-left: 1rem;
+  position: relative;
+}
+
+.audit-detail__violations li::before {
+  content: "×";
+  position: absolute;
+  left: 0;
+  color: var(--fail);
+}
+
+.audit-detail__clean {
+  font-size: 0.82rem;
+  color: var(--ok);
+}
+
+.audit-detail__hash {
+  font-size: 0.78rem;
+}
+
+/* ── Pass / Fail badge ───────────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 2rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.badge--pass {
+  background: rgba(63, 185, 80, 0.15);
+  color: var(--ok);
+  border: 1px solid rgba(63, 185, 80, 0.3);
+}
+
+.badge--fail {
+  background: rgba(248, 81, 73, 0.15);
+  color: var(--fail);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+}
+
+/* ── Patch viewer ────────────────────────────────────────────────────────── */
+.patch-viewer { }
+
+.patch-viewer__label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.patch-viewer--error {
+  color: var(--fail);
+  font-size: 0.8rem;
+  padding: 0.5rem;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+}

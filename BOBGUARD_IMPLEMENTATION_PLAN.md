@@ -229,29 +229,29 @@ Create the `bobAgentService` that represents the integration point with IBM Bob 
 
 ## Sub-Task 8 — React Frontend: Dashboard
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 ### Intent
 Build the React/Vite Enterprise Command Center dashboard that visualizes all five compliance metrics from `GET /api/audit/stats`, displays a live feed of recent audit records from `GET /api/audit/records`, and shows auto-remediation patch diffs when available.
 
 ### Expected Outcomes
-- `mern-auditor-platform/frontend/` is scaffolded with Vite + React.
-- The Dashboard page renders all five metric cards: Provenance Ratio, License Contamination Index, Vulnerability Density, Phantom Packages Detected, Tamper-Evidence State.
-- The Audit Log table shows the 20 most recent commits with color-coded pass/fail indicators.
-- Clicking a row expands it to show the full violation list and — if available — a rendered patch diff.
-- Data refreshes automatically every 10 seconds via `setInterval` polling.
-- Build output (`npm run build`) produces a static bundle in `mern-auditor-platform/frontend/dist/`.
+- `mern-auditor-platform/frontend/` is scaffolded with Vite + React. ✔
+- The Dashboard page renders all five metric cards: Provenance Ratio, License Contamination Index, Vulnerability Density, Phantom Packages Detected, Tamper-Evidence State. ✔
+- The Audit Log table shows the 20 most recent commits with color-coded pass/fail indicators. ✔
+- Clicking a row expands it to show the full violation list and — if available — a rendered patch diff. ✔
+- Data refreshes automatically every 10 seconds via `setInterval` polling. ✔
+- Build output (`npm run build`) produces a static bundle in `mern-auditor-platform/frontend/dist/`. ✔ (built in 10.26s, 314.90 kB JS / 4.51 kB CSS)
 
 ### Todo List
-1. Scaffold `mern-auditor-platform/frontend/` using `npm create vite@latest . -- --template react`.
-2. Install dependencies: `axios` (HTTP polling), `react-syntax-highlighter` (diff rendering).
-3. Create `src/api/auditApi.js` — exports `fetchStats()` and `fetchRecords()` using axios.
-4. Create `src/components/MetricCard.jsx` — reusable card component with `title`, `value`, `status` (green/yellow/red) props.
-5. Create `src/components/AuditTable.jsx` — renders the audit log with expandable rows.
-6. Create `src/components/PatchViewer.jsx` — decodes Base64 patch and renders it with `react-syntax-highlighter` using the `diff` language.
-7. Create `src/pages/Dashboard.jsx` — orchestrates all components, manages polling with `useEffect` + `setInterval`, handles loading and error states.
-8. Update `src/App.jsx` to render `<Dashboard />`.
-9. Style with CSS Modules or Tailwind (if available) — dark enterprise theme, red/amber/green status colors.
+1. Scaffold `mern-auditor-platform/frontend/` using `npm create vite@latest . -- --template react`. ✔
+2. Install dependencies: `axios` (HTTP polling), `react-syntax-highlighter` (diff rendering). ✔ (0 vulnerabilities)
+3. Create `src/api/auditApi.js` — exports `fetchStats()` and `fetchRecords()` using axios. ✔
+4. Create `src/components/MetricCard.jsx` — reusable card component with `title`, `value`, `status` (green/yellow/red) props. ✔
+5. Create `src/components/AuditTable.jsx` — renders the audit log with expandable rows. ✔
+6. Create `src/components/PatchViewer.jsx` — decodes Base64 patch and renders it with `react-syntax-highlighter` using the `diff` language. ✔
+7. Create `src/pages/Dashboard.jsx` — orchestrates all components, manages polling with `useEffect` + `setInterval`, handles loading and error states. ✔
+8. Update `src/App.jsx` to render `<Dashboard />`. ✔
+9. Style with dark enterprise theme (CSS custom properties, GitHub-dark palette, red/amber/green status colors). ✔
 
 ### Relevant Context
 - Vite dev server runs on `http://localhost:5173` — this must match the CORS origin in the backend.
