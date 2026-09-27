@@ -7,6 +7,8 @@
  *   pageSize      {number}  — records per page (default 20)
  *   onPageChange  {(page: number) => void}
  */
+import { IconChevronLeft, IconChevronRight } from "./Icons";
+
 export default function PaginationBar({ page, total, pageSize = 20, onPageChange }) {
   const totalPages = Math.ceil(total / pageSize);
 
@@ -27,12 +29,12 @@ export default function PaginationBar({ page, total, pageSize = 20, onPageChange
   return (
     <nav className="pagination" aria-label="Audit log pagination">
       <button
-        className="pagination__btn"
+        className="pagination__btn pagination__btn--nav"
         onClick={() => onPageChange(page - 1)}
         disabled={page === 0}
         aria-label="Previous page"
       >
-        ‹ Prev
+        <IconChevronLeft size={14} /> Prev
       </button>
 
       {start > 0 && (
@@ -63,12 +65,12 @@ export default function PaginationBar({ page, total, pageSize = 20, onPageChange
       )}
 
       <button
-        className="pagination__btn"
+        className="pagination__btn pagination__btn--nav"
         onClick={() => onPageChange(page + 1)}
         disabled={page >= totalPages - 1}
         aria-label="Next page"
       >
-        Next ›
+        Next <IconChevronRight size={14} />
       </button>
 
       <span className="pagination__info">

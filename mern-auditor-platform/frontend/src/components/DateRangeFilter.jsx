@@ -6,6 +6,8 @@
  *   dateTo    {string}                   — ISO date string "YYYY-MM-DD" or ""
  *   onChange  {(from: string, to: string) => void}  — called on every change
  */
+import { IconX, IconFilter } from "./Icons";
+
 export default function DateRangeFilter({ dateFrom, dateTo, onChange }) {
   function handleFrom(e) {
     onChange(e.target.value, dateTo);
@@ -23,7 +25,7 @@ export default function DateRangeFilter({ dateFrom, dateTo, onChange }) {
 
   return (
     <div className="date-filter">
-      <span className="date-filter__label">Filter by date:</span>
+      <span className="date-filter__label"><IconFilter size={12} /> Filter by date:</span>
 
       <label className="date-filter__group">
         <span className="date-filter__field-label">From</span>
@@ -48,8 +50,8 @@ export default function DateRangeFilter({ dateFrom, dateTo, onChange }) {
       </label>
 
       {hasFilter && (
-        <button className="date-filter__clear" onClick={handleClear}>
-          Clear
+        <button className="date-filter__clear" onClick={handleClear} title="Clear date filter">
+          <IconX size={13} /> Clear
         </button>
       )}
     </div>

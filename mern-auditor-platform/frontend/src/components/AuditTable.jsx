@@ -39,6 +39,7 @@ export default function AuditTable({ records = [] }) {
   }
 
   return (
+    <div className="audit-table-wrap">
     <table className="audit-table">
       <thead>
         <tr>
@@ -115,5 +116,6 @@ export default function AuditTable({ records = [] }) {
         })}
       </tbody>
     </table>
+    </div>
   );
 }

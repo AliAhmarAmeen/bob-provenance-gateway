@@ -15,17 +15,20 @@
 
 require("dotenv").config();
 
-const express   = require("express");
-const cors      = require("cors");
-const mongoose  = require("mongoose");
+const express = require("express");
+const cors = require("cors");
+const mongoose = require("mongoose");
 
 const { loadPolicy } = require("./config/policyLoader");
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const PORT       = parseInt(process.env.PORT, 10)       || 5000;
-const MONGO_URI  = process.env.MONGO_URI                || "mongodb://localhost:27017/bobguard";
-const CORS_ORIGIN = process.env.CORS_ORIGIN             || "http://localhost:5173";
+const PORT = parseInt(process.env.PORT, 10) || 5000;
+const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/bobguard";
+const CORS_ORIGIN =
+  process.env.CORS_ORIGIN ||
+  "https://bobguard.netlify.app/" ||
+  "http://localhost:5173";
 
 // ─── Policy (loaded once, cached) ─────────────────────────────────────────────
 
@@ -42,11 +45,13 @@ try {
 const app = express();
 
 // CORS — allow the Vite dev server (and any additional origins from env)
-app.use(cors({
-  origin: CORS_ORIGIN.split(",").map((o) => o.trim()),
-  methods: ["GET", "POST"],
-  allowedHeaders: ["Content-Type"],
-}));
+app.use(
+  cors({
+    origin: CORS_ORIGIN.split(",").map((o) => o.trim()),
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"],
+  }),
+);
 
 // Parse JSON request bodies (limit 2 mb — diffs can be large)
 app.use(express.json({ limit: "2mb" }));
@@ -58,7 +63,8 @@ app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
     policyVersion: policy.metadata.policyVersion,
-    mongoState: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+    mongoState:
+      mongoose.connection.readyState === 1 ? "connected" : "disconnected",
   });
 });
 
@@ -71,7 +77,9 @@ app.get("/health", (_req, res) => {
 // eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
   console.error("[BobGuard Error]", err.message);
-  res.status(err.status || 500).json({ error: err.message || "Internal Server Error" });
+  res
+    .status(err.status || 500)
+    .json({ error: err.message || "Internal Server Error" });
 });
 
 // ─── MongoDB + server start ───────────────────────────────────────────────────

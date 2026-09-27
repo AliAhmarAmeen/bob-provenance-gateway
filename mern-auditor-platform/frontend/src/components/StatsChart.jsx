@@ -92,7 +92,7 @@ export default function StatsChart({ stats }) {
   return (
     <div className="stats-chart">
       <p className="stats-chart__label">Metric Overview</p>
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={240}>
         <BarChart
           data={data}
           layout="vertical"
@@ -101,7 +101,7 @@ export default function StatsChart({ stats }) {
           <XAxis
             type="number"
             domain={[0, 100]}
-            tick={{ fontSize: 10, fill: "var(--muted)" }}
+            tick={{ fontSize: 12, fill: "var(--muted)", fontFamily: "var(--font-ui)" }}
             axisLine={{ stroke: "var(--border)" }}
             tickLine={false}
             tickFormatter={(v) => `${v}%`}
@@ -109,8 +109,8 @@ export default function StatsChart({ stats }) {
           <YAxis
             type="category"
             dataKey="name"
-            width={150}
-            tick={{ fontSize: 10, fill: "var(--muted)" }}
+            width={160}
+            tick={{ fontSize: 12, fill: "var(--text-2)", fontFamily: "var(--font-ui)", fontWeight: 500 }}
             axisLine={false}
             tickLine={false}
           />

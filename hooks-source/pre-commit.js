@@ -76,6 +76,44 @@ function getBobTaskId() {
 }
 
 /**
+ * Return the git user.name configured for this repo.
+ * Falls back to 'unknown' when git config is unavailable.
+ */
+function getGitAuthor() {
+  try {
+    return execSync("git config user.name", { encoding: "utf8" }).trim() || "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+/**
+ * Return the current branch name.
+ * Falls back to 'unknown' when HEAD is detached or git is unavailable.
+ */
+function getGitBranch() {
+  try {
+    return execSync("git rev-parse --abbrev-ref HEAD", { encoding: "utf8" }).trim() || "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+/**
+ * Return the SHA of the most-recent commit (i.e. the parent of the incoming
+ * commit).  During pre-commit HEAD points to the previous commit — the new
+ * SHA does not exist yet — so this is the best available identifier.
+ * Falls back to 'pre-commit' when the repo has no commits yet.
+ */
+function getGitCommitSha() {
+  try {
+    return execSync("git rev-parse HEAD", { encoding: "utf8" }).trim() || "pre-commit";
+  } catch {
+    return "pre-commit";
+  }
+}
+
+/**
  * POST the audit payload to the BobGuard gateway.
  * Resolves with the parsed JSON response body.
  * Rejects when the HTTP request fails, times out, or returns a non-2xx status.
@@ -142,7 +180,12 @@ async function main() {
   log.info(`Bob Task ID: ${c.bold}${taskId}${c.reset}`);
 
   // 3. Build payload
-  const payload = { repoName: REPO_NAME, diff, taskId };
+  const author    = getGitAuthor();
+  const branch    = getGitBranch();
+  const commitSha = getGitCommitSha();
+  log.info(`Author: ${c.bold}${author}${c.reset}  Branch: ${c.bold}${branch}${c.reset}`);
+
+  const payload = { repoName: REPO_NAME, diff, taskId, author, branch, commitSha };
 
   // 4. POST to gateway
   log.info(`Sending audit request to http://${GATEWAY_HOST}:${GATEWAY_PORT}${GATEWAY_PATH} ...`);

@@ -9,6 +9,7 @@
  * On mount the stored preference is restored before the first paint.
  */
 import { useState, useEffect } from "react";
+import { IconSun, IconMoon } from "./Icons";
 
 const STORAGE_KEY = "bobguard-theme";
 
@@ -45,7 +46,7 @@ export default function ThemeToggle() {
       aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
       title={isDark ? "Switch to light theme" : "Switch to dark theme"}
     >
-      {isDark ? "☀️" : "🌙"}
+      {isDark ? <IconSun size={16} /> : <IconMoon size={16} />}
     </button>
   );
 }
