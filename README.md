@@ -27,6 +27,7 @@ Open **<https://bobguard.netlify.app>** in one browser tab, then run the command
 
 A diff that adds a GPL-3.0 SPDX identifier — banned by the enterprise policy.
 
+**Bash:**
 ```bash
 curl -s -X POST https://p01--bob-guard--sqklh22qqpms.code.run/api/audit/analyze \
   -H "Content-Type: application/json" \
@@ -40,6 +41,20 @@ curl -s -X POST https://p01--bob-guard--sqklh22qqpms.code.run/api/audit/analyze 
   }'
 ```
 
+**PowerShell:**
+```powershell
+Invoke-RestMethod -Uri "https://p01--bob-guard--sqklh22qqpms.code.run/api/audit/analyze" `
+  -Method Post -ContentType "application/json" `
+  -Body (@{
+    diff      = "+// SPDX-License-Identifier: GPL-3.0-only`n+function parseData(input) { return input.trim(); }`n+module.exports = { parseData };"
+    commitSha = "demo-1-license"
+    repoName  = "NodeGoat"
+    author    = "judge"
+    branch    = "main"
+    taskId    = "hackathon-demo"
+  } | ConvertTo-Json)
+```
+
 Expected: `"blocked": true` — `"License violation: Banned license identifiers found: GPL-3.0"`
 
 ---
@@ -48,6 +63,7 @@ Expected: `"blocked": true` — `"License violation: Banned license identifiers 
 
 A diff that requires a package that does not exist on the npm registry — AI hallucination detection.
 
+**Bash:**
 ```bash
 curl -s -X POST https://p01--bob-guard--sqklh22qqpms.code.run/api/audit/analyze \
   -H "Content-Type: application/json" \
@@ -61,6 +77,20 @@ curl -s -X POST https://p01--bob-guard--sqklh22qqpms.code.run/api/audit/analyze 
   }'
 ```
 
+**PowerShell:**
+```powershell
+Invoke-RestMethod -Uri "https://p01--bob-guard--sqklh22qqpms.code.run/api/audit/analyze" `
+  -Method Post -ContentType "application/json" `
+  -Body (@{
+    diff      = "+var compressor = require(`"mongo-image-fast-compress`");`n+module.exports = { compress: compressor.compress };"
+    commitSha = "demo-2-phantom"
+    repoName  = "NodeGoat"
+    author    = "judge"
+    branch    = "main"
+    taskId    = "hackathon-demo"
+  } | ConvertTo-Json)
+```
+
 Expected: `"blocked": true` — `"Phantom package: \"mongo-image-fast-compress\" not found in npm registry"`
 
 ---
@@ -69,6 +99,7 @@ Expected: `"blocked": true` — `"Phantom package: \"mongo-image-fast-compress\"
 
 A diff with two OWASP patterns simultaneously — triggers SubagentB detection and SubagentC auto-remediation patch generation.
 
+**Bash:**
 ```bash
 curl -s -X POST https://p01--bob-guard--sqklh22qqpms.code.run/api/audit/analyze \
   -H "Content-Type: application/json" \
@@ -82,6 +113,20 @@ curl -s -X POST https://p01--bob-guard--sqklh22qqpms.code.run/api/audit/analyze 
   }'
 ```
 
+**PowerShell:**
+```powershell
+Invoke-RestMethod -Uri "https://p01--bob-guard--sqklh22qqpms.code.run/api/audit/analyze" `
+  -Method Post -ContentType "application/json" `
+  -Body (@{
+    diff      = "+var adminPassword = `"admin123`";`n+function findUser(req, db) {`n+  return db.users.find({ username: req.body.username });`n+}"
+    commitSha = "demo-3-vuln"
+    repoName  = "NodeGoat"
+    author    = "judge"
+    branch    = "main"
+    taskId    = "hackathon-demo"
+  } | ConvertTo-Json)
+```
+
 Expected: `"blocked": true` — violations for both `Hardcoded Secrets` and `NoSQL Injection`, plus `"remediationAvailable": true`. Click the record row on the dashboard to view the auto-remediation patch diff.
 
 ---
@@ -90,6 +135,7 @@ Expected: `"blocked": true` — violations for both `Hardcoded Secrets` and `NoS
 
 A safe refactor — no violations, commit allowed, AI-BOM record still written for provenance tracking.
 
+**Bash:**
 ```bash
 curl -s -X POST https://p01--bob-guard--sqklh22qqpms.code.run/api/audit/analyze \
   -H "Content-Type: application/json" \
@@ -103,14 +149,21 @@ curl -s -X POST https://p01--bob-guard--sqklh22qqpms.code.run/api/audit/analyze 
   }'
 ```
 
+**PowerShell:**
+```powershell
+Invoke-RestMethod -Uri "https://p01--bob-guard--sqklh22qqpms.code.run/api/audit/analyze" `
+  -Method Post -ContentType "application/json" `
+  -Body (@{
+    diff      = "+// refactor: extract date formatting helper`n+function formatDate(d) { return d.toISOString().split(`"T`")[0]; }`n+module.exports = { formatDate };"
+    commitSha = "demo-4-clean"
+    repoName  = "NodeGoat"
+    author    = "judge"
+    branch    = "main"
+    taskId    = "hackathon-demo"
+  } | ConvertTo-Json)
+```
+
 Expected: `"blocked": false`, `"allowCommit": true`, `"violations": []` — a green **PASS** record appears on the dashboard.
-
----
-
-> **Windows (no curl)?** Use [Hoppscotch](https://hoppscotch.io) (runs in-browser, no install):
-> - Method: `POST`
-> - URL: `https://p01--bob-guard--sqklh22qqpms.code.run/api/audit/analyze`
-> - Body → JSON: paste the `d` value from any command above
 
 ---
 
@@ -299,9 +352,16 @@ npm run dev
 
 ### Health check
 
+**Bash:**
 ```bash
 curl http://localhost:5000/health
 # → { "status": "ok", "policyVersion": "1.0.0", "mongoState": "connected" }
+```
+
+**PowerShell:**
+```powershell
+Invoke-RestMethod -Uri "http://localhost:5000/health"
+# → status: ok  policyVersion: 1.0.0  mongoState: connected
 ```
 
 ---
