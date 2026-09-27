@@ -1,6 +1,189 @@
 # BobGuard — AI-BOM & Code Provenance Gateway
 
-BobGuard is a production-grade enterprise DevSecOps governance platform that intercepts Git commits, orchestrates IBM Bob 2.0 security subagents to analyse every code diff, enforces an enterprise policy ruleset, and persists a cryptographically signed **AI Bill of Materials (AI-BOM)** to MongoDB. A React dashboard visualises compliance metrics in real time.
+BobGuard is a production-grade enterprise DevSecOps governance platform that intercepts Git commits, orchestrates IBM Bob 2.0 security subagents to analyse every code diff, enforces an enterprise policy ruleset, and persists a cryptographically signed **AI Bill of Materials (AI-BOM)** to MongoDB Atlas. A React dashboard visualises compliance metrics in real time.
+
+---
+
+## 🔴 Live URLs
+
+| | URL |
+|---|---|
+| **Dashboard** | **<https://bobguard.netlify.app>** |
+| **API health check** | <https://p01--bob-guard--sqklh22qqpms.code.run/health> |
+
+The dashboard is connected to a live MongoDB Atlas database via the Northflank backend. Every audit record created — by any means — appears on the dashboard within 10 seconds.
+
+---
+
+## ⚡ Live Demo — No Setup Required
+
+The entire audit pipeline runs on the live backend. You can trigger all four demo scenarios with a single `curl` command each — **no cloning, no `npm install`, no local server needed**.
+
+Open **<https://bobguard.netlify.app>** in one browser tab, then run the commands below. Watch each new record appear on the dashboard in real time.
+
+---
+
+### Scenario 1 — License Contamination (BLOCKED)
+
+A diff that adds a GPL-3.0 SPDX identifier — banned by the enterprise policy.
+
+```bash
+curl -s -X POST https://p01--bob-guard--sqklh22qqpms.code.run/api/audit/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "diff": "+// SPDX-License-Identifier: GPL-3.0-only\n+function parseData(input) { return input.trim(); }\n+module.exports = { parseData };",
+    "commitSha": "demo-1-license",
+    "repoName": "NodeGoat",
+    "author": "judge",
+    "branch": "main",
+    "taskId": "hackathon-demo"
+  }'
+```
+
+Expected: `"blocked": true` — `"License violation: Banned license identifiers found: GPL-3.0"`
+
+---
+
+### Scenario 2 — Phantom / Hallucinated Dependency (BLOCKED)
+
+A diff that requires a package that does not exist on the npm registry — AI hallucination detection.
+
+```bash
+curl -s -X POST https://p01--bob-guard--sqklh22qqpms.code.run/api/audit/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "diff": "+var compressor = require(\"mongo-image-fast-compress\");\n+module.exports = { compress: compressor.compress };",
+    "commitSha": "demo-2-phantom",
+    "repoName": "NodeGoat",
+    "author": "judge",
+    "branch": "main",
+    "taskId": "hackathon-demo"
+  }'
+```
+
+Expected: `"blocked": true` — `"Phantom package: \"mongo-image-fast-compress\" not found in npm registry"`
+
+---
+
+### Scenario 3 — NoSQL Injection + Hardcoded Secret + Auto-Remediation (BLOCKED)
+
+A diff with two OWASP patterns simultaneously — triggers SubagentB detection and SubagentC auto-remediation patch generation.
+
+```bash
+curl -s -X POST https://p01--bob-guard--sqklh22qqpms.code.run/api/audit/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "diff": "+var adminPassword = \"admin123\";\n+function findUser(req, db) {\n+  return db.users.find({ username: req.body.username });\n+}",
+    "commitSha": "demo-3-vuln",
+    "repoName": "NodeGoat",
+    "author": "judge",
+    "branch": "main",
+    "taskId": "hackathon-demo"
+  }'
+```
+
+Expected: `"blocked": true` — violations for both `Hardcoded Secrets` and `NoSQL Injection`, plus `"remediationAvailable": true`. Click the record row on the dashboard to view the auto-remediation patch diff.
+
+---
+
+### Scenario 4 — Clean Commit (PASSED)
+
+A safe refactor — no violations, commit allowed, AI-BOM record still written for provenance tracking.
+
+```bash
+curl -s -X POST https://p01--bob-guard--sqklh22qqpms.code.run/api/audit/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "diff": "+// refactor: extract date formatting helper\n+function formatDate(d) { return d.toISOString().split(\"T\")[0]; }\n+module.exports = { formatDate };",
+    "commitSha": "demo-4-clean",
+    "repoName": "NodeGoat",
+    "author": "judge",
+    "branch": "main",
+    "taskId": "hackathon-demo"
+  }'
+```
+
+Expected: `"blocked": false`, `"allowCommit": true`, `"violations": []` — a green **PASS** record appears on the dashboard.
+
+---
+
+> **Windows (no curl)?** Use [Hoppscotch](https://hoppscotch.io) (runs in-browser, no install):
+> - Method: `POST`
+> - URL: `https://p01--bob-guard--sqklh22qqpms.code.run/api/audit/analyze`
+> - Body → JSON: paste the `d` value from any command above
+
+---
+
+## Full Local Demo — Git Pre-Commit Hook (all 4 scenarios)
+
+This path demonstrates the **git hook interception** — BobGuard blocking a real `git commit` at the developer's terminal before the code ever reaches the remote. All records still write to the same Atlas database and appear on the live dashboard.
+
+### Prerequisites
+
+- Node.js 18+, npm 9+, Git 2.x
+- MongoDB Atlas URI **or** local MongoDB on `localhost:27017`
+- Backend running: `cd mern-auditor-platform/backend && npm run dev`
+- Frontend running: `cd mern-auditor-platform/frontend && npm run dev`
+- The `mock-enterprise-target/` folder present (it is already in the repo)
+
+### Setup — install the pre-commit hook
+
+```bash
+# From the repo root
+cp hooks-source/pre-commit.js .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit        # macOS / Linux only
+```
+
+### The complete 4-scenario demo script (PowerShell)
+
+```powershell
+# === PREREQS: backend running on :5000, frontend on :5173 ===
+
+# ── Scenario 1: License Contamination ────────────────────────────────────────
+Set-Content "mock-enterprise-target/app/routes/gpl-util.js" @"
+// SPDX-License-Identifier: GPL-3.0-only
+function parseData(input) { return input.trim(); }
+module.exports = { parseData };
+"@ -Encoding UTF8
+git add mock-enterprise-target/app/routes/gpl-util.js
+git commit -m "demo-1: GPL license contamination"
+
+# ── Scenario 2: Phantom Dependency ───────────────────────────────────────────
+Set-Content "mock-enterprise-target/app/routes/image-util.js" @"
+var compressor = require("mongo-image-fast-compress");
+module.exports = { compress: compressor.compress };
+"@ -Encoding UTF8
+git add mock-enterprise-target/app/routes/image-util.js
+git commit -m "demo-2: hallucinated npm package"
+
+# ── Scenario 3: NoSQL Injection + Hardcoded Secret + Auto-Remediation ────────
+Set-Content "mock-enterprise-target/app/routes/demo-vuln.js" @"
+var adminPassword = "admin123";
+function findUser(req, db) {
+  return db.users.find({ username: req.body.username });
+}
+module.exports = { findUser };
+"@ -Encoding UTF8
+git add mock-enterprise-target/app/routes/demo-vuln.js
+git commit -m "demo-3: NoSQL injection + hardcoded secret"
+
+# ── Scenario 4: Clean Commit (PASS) ──────────────────────────────────────────
+echo "" >> mock-enterprise-target/README.md
+git add mock-enterprise-target/README.md
+git commit -m "demo-4: clean commit — no violations"
+
+# ── Cleanup ───────────────────────────────────────────────────────────────────
+git restore --staged mock-enterprise-target/app/routes/gpl-util.js 2>$null
+git restore --staged mock-enterprise-target/app/routes/image-util.js 2>$null
+git restore --staged mock-enterprise-target/app/routes/demo-vuln.js 2>$null
+Remove-Item mock-enterprise-target/app/routes/gpl-util.js -ErrorAction SilentlyContinue
+Remove-Item mock-enterprise-target/app/routes/image-util.js -ErrorAction SilentlyContinue
+Remove-Item mock-enterprise-target/app/routes/demo-vuln.js -ErrorAction SilentlyContinue
+```
+
+Scenarios 1–3 each produce a **blocked** commit (exit code 1). Scenario 4 produces a **passing** commit (exit code 0). Open the live dashboard — all four records appear within 10 seconds.
+
+> For a detailed step-by-step walkthrough of Scenario 3 specifically, see [`mock-enterprise-target/DEMO_VULN_CHANGE.md`](mock-enterprise-target/DEMO_VULN_CHANGE.md).
 
 ---
 
@@ -9,40 +192,43 @@ BobGuard is a production-grade enterprise DevSecOps governance platform that int
 ```
 mock-enterprise-target/           ← Intentionally vulnerable OWASP NodeGoat app
 ├── .git/hooks/pre-commit         ← Node.js interceptor (fires on every git commit)
-└── .ai-policy.json               ← Enterprise governance ruleset
+└── .ai-policy.json               ← Enterprise governance ruleset (defines all patterns)
 
 mern-auditor-platform/
-├── backend/                      ← Express 4 + Mongoose 8 API (port 5000)
-│   ├── server.js
+├── backend/                      ← Express 4 + Mongoose 8 API
+│   ├── server.js                 ← Entry point, CORS, MongoDB connect
 │   ├── controllers/auditController.js   ← Three-subagent pipeline
 │   ├── models/AuditRecord.js            ← Mongoose AI-BOM schema
 │   ├── routes/auditRoutes.js            ← REST endpoints
 │   ├── services/bobAgentService.js      ← Bob 2.0 remediation stub
-│   └── config/policyLoader.js           ← Policy cache
-└── frontend/                     ← Vite + React dashboard (port 5173)
+│   └── config/policyLoader.js           ← Policy cache + AJV validation
+└── frontend/                     ← Vite + React dashboard
     └── src/
-        ├── api/auditApi.js
+        ├── api/auditApi.js              ← axios wrapper (reads VITE_API_URL)
         ├── components/  (MetricCard, AuditTable, PatchViewer)
         └── pages/Dashboard.jsx
+
+Dockerfile                        ← Repo-root Dockerfile (build context = /)
+hooks-source/pre-commit.js        ← Pre-commit hook source (copy to .git/hooks/)
 ```
 
 ### Data flow
 
 ```
 git commit  →  pre-commit hook  →  POST /api/audit/analyze
-                                        ↓
-                          SubagentA (License) ┐ parallel
-                          SubagentB (Vulns)   ┘
-                                        ↓ (if B fails)
-                          SubagentC (Auto-remediation)
-                                        ↓
+  (or curl)                               ↓
+                          SubagentA (License scan)  ┐ parallel
+                          SubagentB (Vuln + Phantom)┘
+                                          ↓ (if B flags violations)
+                          SubagentC (Auto-remediation patch)
+                                          ↓
                           SHA-256 provenance hash
-                                        ↓
-                          AuditRecord.create() → MongoDB
-                                        ↓
+                                          ↓
+                          AuditRecord.create() → MongoDB Atlas
+                                          ↓
                           { allowCommit, auditId, violations }
-                                        ↓
-                  blocked? → exit 1 (commit rejected)
+                                          ↓
+                  blocked? → exit 1 (commit rejected by git hook)
                   passed?  → exit 0 (commit accepted)
 
 React Dashboard  ←  polls /api/audit/stats + /api/audit/records  every 10 s
@@ -50,24 +236,12 @@ React Dashboard  ←  polls /api/audit/stats + /api/audit/records  every 10 s
 
 ---
 
-## Prerequisites
-
-| Requirement | Minimum version | Notes |
-|---|---|---|
-| Node.js | 18 LTS | Required by both backend and frontend |
-| npm | 9 | Bundled with Node 18 |
-| MongoDB | 6 | Running locally on `localhost:27017` |
-| Git | 2.x | Pre-commit hook uses `git diff --cached` |
-| Docker (optional) | 24 | Easiest way to run MongoDB — see below |
-
----
-
-## Installation
+## Local Development Setup
 
 ### 1 — Clone & enter the repo
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/AliAhmarAmeen/bob-provenance-gateway.git
 cd ai-provenance-gateway
 ```
 
@@ -82,70 +256,37 @@ npm install
 
 ```bash
 cp .env.example .env
-# Edit .env if your MongoDB URI or port differs from the defaults
+# Edit .env — set MONGO_URI to your Atlas connection string or local MongoDB URI
 ```
-
-Default values in `.env.example`:
 
 | Variable | Default | Description |
 |---|---|---|
-| `PORT` | `5000` | Express server port — must match the pre-commit hook |
+| `PORT` | `5000` | Express server port |
 | `MONGO_URI` | `mongodb://localhost:27017/bobguard` | MongoDB connection string |
-| `POLICY_PATH` | `../../mock-enterprise-target/.ai-policy.json` | Path to the governance policy file |
-| `CORS_ORIGIN` | `http://localhost:5173` | Vite dev server origin |
+| `POLICY_PATH` | *(auto-resolved)* | Override path to `.ai-policy.json` |
+| `CORS_ORIGIN` | `http://localhost:5173` | Comma-separated allowed origins |
 
 ### 4 — Install frontend dependencies
 
 ```bash
-cd ../../frontend
+cd ../frontend
 npm install
 ```
 
----
-
-## Running MongoDB
-
-### Option A — Docker (recommended)
-
-```bash
-docker run -d \
-  --name bobguard-mongo \
-  -p 27017:27017 \
-  mongo:6
-```
-
-Stop / remove:
-
-```bash
-docker stop bobguard-mongo && docker rm bobguard-mongo
-```
-
-### Option B — Local MongoDB install
-
-Ensure `mongod` is running and listening on `localhost:27017`. Refer to the [MongoDB installation guide](https://www.mongodb.com/docs/manual/installation/) for your OS.
-
----
-
-## Starting the Platform
-
-Open **two terminals**:
+### 5 — Start both servers
 
 **Terminal 1 — Backend**
 
 ```bash
 cd mern-auditor-platform/backend
-npm run dev          # nodemon watches for changes
-# OR
-npm start            # plain node, no watch
+npm run dev
 ```
 
 Expected output:
-
 ```
 [BobGuard] MongoDB connected → mongodb://localhost:27017/bobguard
 [BobGuard] Gateway listening on http://localhost:5000
 [BobGuard] Policy v1.0.0 active
-[BobGuard] CORS origin: http://localhost:5173
 ```
 
 **Terminal 2 — Frontend**
@@ -153,17 +294,8 @@ Expected output:
 ```bash
 cd mern-auditor-platform/frontend
 npm run dev
+# Open http://localhost:5173
 ```
-
-Expected output:
-
-```
-  VITE v8.x.x  ready in Xms
-
-  ➜  Local:   http://localhost:5173/
-```
-
-Open **http://localhost:5173** in a browser to see the Enterprise Command Center dashboard.
 
 ### Health check
 
@@ -171,40 +303,6 @@ Open **http://localhost:5173** in a browser to see the Enterprise Command Center
 curl http://localhost:5000/health
 # → { "status": "ok", "policyVersion": "1.0.0", "mongoState": "connected" }
 ```
-
----
-
-## Demo: Triggering a Blocked Commit
-
-Follow the instructions in [`mock-enterprise-target/DEMO_VULN_CHANGE.md`](mock-enterprise-target/DEMO_VULN_CHANGE.md) for the exact step-by-step walkthrough.
-
-**Quick summary:**
-
-```bash
-# 1. Add a hardcoded password to any route file inside mock-enterprise-target
-echo '' >> mock-enterprise-target/app/routes/index.js
-echo '// demo vuln' >> mock-enterprise-target/app/routes/index.js
-echo "var adminPassword = 'admin123';" >> mock-enterprise-target/app/routes/index.js
-
-# 2. Stage the change
-git add mock-enterprise-target/app/routes/index.js
-
-# 3. Attempt the commit — the pre-commit hook fires automatically
-git commit -m "demo: trigger BobGuard block"
-```
-
-Expected terminal output (commit blocked):
-
-```
-[BobGuard] Analysing staged diff...
-[BobGuard] ✗ COMMIT BLOCKED
-  Violations:
-    • Hardcoded Secrets (HIGH): adminPassword = 'admin123'
-[BobGuard] Audit record saved → <auditId>
-[BobGuard] Auto-remediation patch available. See dashboard for details.
-```
-
-The commit is **rejected** (exit code 1). Open the dashboard — within 10 seconds the new audit record appears in the Audit Log with a red BLOCKED badge and the violation details. Click the row to see the auto-remediation patch diff.
 
 ---
 
@@ -238,14 +336,14 @@ All endpoints are prefixed with `/api/audit`.
 
 ```json
 {
-  "allowCommit":          true,
-  "blocked":              false,
+  "allowCommit":          false,
+  "blocked":              true,
   "auditId":              "66f1a2b3c4d5e6f7a8b9c0d1",
-  "violations":           [],
-  "remediationAvailable": false,
-  "licenseStatus":        { "passed": true, "compliant": true, ... },
-  "securityStatus":       { "passed": true, "vulnerabilities": [], ... },
-  "remediation":          null,
+  "violations":           ["Hardcoded Secrets (HIGH): adminPassword = \"admin123\""],
+  "remediationAvailable": true,
+  "licenseStatus":        { "passed": true, "compliant": true },
+  "securityStatus":       { "passed": false, "vulnerabilities": [...], "hallucinatedPackages": [] },
+  "remediation":          { "patchAvailable": true, "patch": "--- a/...\n+++ b/..." },
   "aiRatio":              { "humanLines": 2, "aiLines": 5, "totalLines": 12, "aiPercent": 42 },
   "sha256ProvenanceHash": "a3f2...64 hex chars"
 }
@@ -272,102 +370,53 @@ All endpoints are prefixed with `/api/audit`.
 |---|---|---|---|
 | `PORT` | No | `5000` | Express server port |
 | `MONGO_URI` | No | `mongodb://localhost:27017/bobguard` | MongoDB connection string |
-| `POLICY_PATH` | No | `../../mock-enterprise-target/.ai-policy.json` | Path to `.ai-policy.json` |
-| `CORS_ORIGIN` | No | `http://localhost:5173` | Comma-separated allowed origins |
+| `POLICY_PATH` | No | *(auto-resolved)* | Override path to `.ai-policy.json` |
+| `CORS_ORIGIN` | No | `https://bobguard.netlify.app,http://localhost:5173` | Comma-separated allowed origins |
 
 ---
 
 ## Deployment
 
-### Backend → Northflank
+### Backend → Northflank (live)
 
-The backend is containerised via the `Dockerfile` at the repo root.
-
-#### Step 1 — Push env vars to MongoDB Atlas
-
-Create a free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster and copy the connection string. It will look like:
-
-```
-mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/bobguard?retryWrites=true&w=majority
-```
-
-#### Step 2 — Create a Northflank service
-
-1. Go to **Northflank → New service → Combined (Build and deploy a Git repo)**
-2. Connect your GitHub account and select **`AliAhmarAmeen/bob-provenance-gateway`**
-3. Set branch to **`main`**
-4. Under **Build options** choose **Dockerfile**
-5. Set the following:
+The backend is containerised via the [`Dockerfile`](Dockerfile) at the repo root.
 
 | Field | Value |
 |---|---|
 | **Build context** | `/` |
 | **Dockerfile location** | `/Dockerfile` |
-
-6. Under **Environment variables** add:
-
-| Variable | Value |
-|---|---|
 | `PORT` | `5000` |
-| `MONGO_URI` | Your Atlas connection string |
+| `MONGO_URI` | MongoDB Atlas connection string |
 | `CORS_ORIGIN` | `https://bobguard.netlify.app` |
 
-7. Under **Networking** expose port `5000` and enable a **public URL**.
-8. Click **Create service** — Northflank builds the image and deploys it.
-9. Copy the generated public URL (e.g. `https://bobguard-backend-xxxx.northflank.app`).
+Expose port `5000` with a public URL under **Networking**.
 
-#### Step 3 — Wire the frontend to the live backend
-
-In your **Netlify dashboard** for the frontend site:
-
-1. Go to **Site configuration → Environment variables**
-2. Add:
-
-| Variable | Value |
-|---|---|
-| `VITE_API_URL` | `https://<your-northflank-url>/api/audit` |
-
-3. Trigger a new deploy (Deploys → **Trigger deploy → Deploy site**).
-
-The frontend reads `VITE_API_URL` in [`src/api/auditApi.js`](mern-auditor-platform/frontend/src/api/auditApi.js) — once set, all API calls go to the live backend.
-
-#### Step 4 — Verify
-
-```bash
-curl https://<your-northflank-url>/health
-# → { "status": "ok", "policyVersion": "1.0.0", "mongoState": "connected" }
-```
-
-Then open your Netlify URL — the dashboard should load live data.
-
----
-
-### Frontend → Netlify (already deployed)
-
-Build settings for reference:
+### Frontend → Netlify (live)
 
 | Field | Value |
 |---|---|
 | **Base directory** | `mern-auditor-platform/frontend` |
 | **Build command** | `npm run build` |
 | **Publish directory** | `mern-auditor-platform/frontend/dist` |
-| **Environment variable** | `VITE_API_URL=https://<northflank-url>/api/audit` |
+| `VITE_API_URL` | `https://p01--bob-guard--sqklh22qqpms.code.run/api/audit` |
+
+After changing `VITE_API_URL`, trigger **"Clear cache and deploy site"** — Vite bakes env vars at build time.
 
 ---
 
 ## Project Scripts
 
-| Directory | Script | Command | Description |
-|---|---|---|---|
-| `mern-auditor-platform/backend` | `npm start` | `node server.js` | Production start |
-| `mern-auditor-platform/backend` | `npm run dev` | `nodemon server.js` | Dev start with file watch |
-| `mern-auditor-platform/frontend` | `npm run dev` | `vite` | Dev server with HMR |
-| `mern-auditor-platform/frontend` | `npm run build` | `vite build` | Production bundle → `dist/` |
-| `mern-auditor-platform/frontend` | `npm run preview` | `vite preview` | Preview production bundle |
+| Directory | Script | Description |
+|---|---|---|
+| `mern-auditor-platform/backend` | `npm start` | Production start (`node server.js`) |
+| `mern-auditor-platform/backend` | `npm run dev` | Dev start with file watch (nodemon) |
+| `mern-auditor-platform/frontend` | `npm run dev` | Dev server with HMR (Vite) |
+| `mern-auditor-platform/frontend` | `npm run build` | Production bundle → `dist/` |
+| `mern-auditor-platform/frontend` | `npm run preview` | Preview production bundle locally |
 
 ---
 
-## Stretch Goals (out of scope for initial implementation)
+## Stretch Goals
 
 - Real IBM Bob 2.0 CLI integration in `bobAgentService.js` via `child_process.execSync`
 - AI provenance ratio based on Bob's actual `.bob/tasks/` execution log rather than diff line counting
