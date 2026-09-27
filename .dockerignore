@@ -1,0 +1,43 @@
+# ─── BobGuard — Docker ignore ─────────────────────────────────────────────────
+# Keeps the build context sent to Docker daemon lean.
+# The image only needs: backend source, backend deps manifest, and the policy file.
+
+# ── Node modules (re-installed inside the image via npm ci) ───────────────────
+node_modules/
+mern-auditor-platform/node_modules/
+mern-auditor-platform/backend/node_modules/
+mern-auditor-platform/frontend/node_modules/
+mock-enterprise-target/node_modules/
+
+# ── Frontend (not part of the backend image) ──────────────────────────────────
+mern-auditor-platform/frontend/
+
+# ── Dev / test artefacts ──────────────────────────────────────────────────────
+mern-auditor-platform/frontend/dist/
+mock-enterprise-target/test/
+mock-enterprise-target/artifacts/
+mock-enterprise-target/cypress.json
+
+# ── Git & editor metadata ─────────────────────────────────────────────────────
+.git/
+.gitignore
+.github/
+**/.github/
+**/.DS_Store
+**/Thumbs.db
+
+# ── Secrets — never bake into the image ───────────────────────────────────────
+.env
+.env.local
+**/.env
+**/.env.local
+
+# ── Bob AI assistant files ────────────────────────────────────────────────────
+.bobignore
+bob_sessions/
+hooks-source/
+
+# ── Planning docs (not needed at runtime) ─────────────────────────────────────
+*_PLAN.md
+MASTER_CONTEXT.md
+SECURITY.md

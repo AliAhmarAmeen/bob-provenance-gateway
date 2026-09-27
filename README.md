@@ -277,6 +277,84 @@ All endpoints are prefixed with `/api/audit`.
 
 ---
 
+## Deployment
+
+### Backend → Northflank
+
+The backend is containerised via the `Dockerfile` at the repo root.
+
+#### Step 1 — Push env vars to MongoDB Atlas
+
+Create a free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster and copy the connection string. It will look like:
+
+```
+mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/bobguard?retryWrites=true&w=majority
+```
+
+#### Step 2 — Create a Northflank service
+
+1. Go to **Northflank → New service → Combined (Build and deploy a Git repo)**
+2. Connect your GitHub account and select **`AliAhmarAmeen/bob-provenance-gateway`**
+3. Set branch to **`main`**
+4. Under **Build options** choose **Dockerfile**
+5. Set the following:
+
+| Field | Value |
+|---|---|
+| **Build context** | `/` |
+| **Dockerfile location** | `/Dockerfile` |
+
+6. Under **Environment variables** add:
+
+| Variable | Value |
+|---|---|
+| `PORT` | `5000` |
+| `MONGO_URI` | Your Atlas connection string |
+| `CORS_ORIGIN` | `https://bobguard.netlify.app` |
+
+7. Under **Networking** expose port `5000` and enable a **public URL**.
+8. Click **Create service** — Northflank builds the image and deploys it.
+9. Copy the generated public URL (e.g. `https://bobguard-backend-xxxx.northflank.app`).
+
+#### Step 3 — Wire the frontend to the live backend
+
+In your **Netlify dashboard** for the frontend site:
+
+1. Go to **Site configuration → Environment variables**
+2. Add:
+
+| Variable | Value |
+|---|---|
+| `VITE_API_URL` | `https://<your-northflank-url>/api/audit` |
+
+3. Trigger a new deploy (Deploys → **Trigger deploy → Deploy site**).
+
+The frontend reads `VITE_API_URL` in [`src/api/auditApi.js`](mern-auditor-platform/frontend/src/api/auditApi.js) — once set, all API calls go to the live backend.
+
+#### Step 4 — Verify
+
+```bash
+curl https://<your-northflank-url>/health
+# → { "status": "ok", "policyVersion": "1.0.0", "mongoState": "connected" }
+```
+
+Then open your Netlify URL — the dashboard should load live data.
+
+---
+
+### Frontend → Netlify (already deployed)
+
+Build settings for reference:
+
+| Field | Value |
+|---|---|
+| **Base directory** | `mern-auditor-platform/frontend` |
+| **Build command** | `npm run build` |
+| **Publish directory** | `mern-auditor-platform/frontend/dist` |
+| **Environment variable** | `VITE_API_URL=https://<northflank-url>/api/audit` |
+
+---
+
 ## Project Scripts
 
 | Directory | Script | Command | Description |

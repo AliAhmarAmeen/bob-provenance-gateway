@@ -25,10 +25,12 @@ const { loadPolicy } = require("./config/policyLoader");
 
 const PORT = parseInt(process.env.PORT, 10) || 5000;
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/bobguard";
-const CORS_ORIGIN =
-  process.env.CORS_ORIGIN ||
-  "https://bobguard.netlify.app/" ||
-  "http://localhost:5173";
+// Comma-separated list of allowed origins.
+// In production set CORS_ORIGIN to your Netlify URL, e.g.:
+//   CORS_ORIGIN=https://bobguard.netlify.app
+// Multiple origins:
+//   CORS_ORIGIN=https://bobguard.netlify.app,http://localhost:5173
+const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5173";
 
 // ─── Policy (loaded once, cached) ─────────────────────────────────────────────
 
