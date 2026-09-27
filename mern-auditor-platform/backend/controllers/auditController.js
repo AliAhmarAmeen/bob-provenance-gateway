@@ -423,22 +423,34 @@ async function analyzeCommit(req, res, next) {
     const allowCommit = !blocked;
 
     // ── Persist audit record to MongoDB ──────────────────────────────────────
-    const record = await AuditRecord.create({
-      commitSha,
-      branch,
-      author,
-      repoName,
-      taskId,
-      diff,
-      licenseStatus,
-      securityStatus,
-      remediation,
-      aiRatio,
-      sha256ProvenanceHash,
-      blocked,
-      allowCommit,
-      violations,
-    });
+    let record;
+    try {
+      record = await AuditRecord.create({
+        commitSha,
+        branch,
+        author,
+        repoName,
+        taskId,
+        diff,
+        licenseStatus,
+        securityStatus,
+        remediation,
+        aiRatio,
+        sha256ProvenanceHash,
+        blocked,
+        allowCommit,
+        violations,
+      });
+    } catch (dbErr) {
+      // Duplicate provenance hash — identical diff + commitSha already analysed.
+      // Return the existing record's data rather than a 500 crash so that judges
+      // can re-run the same demo command multiple times without errors.
+      if (dbErr.code === 11000) {
+        record = await AuditRecord.findOne({ sha256ProvenanceHash });
+      } else {
+        throw dbErr;
+      }
+    }
 
     // ── Response ─────────────────────────────────────────────────────────────
     return res.status(200).json({
